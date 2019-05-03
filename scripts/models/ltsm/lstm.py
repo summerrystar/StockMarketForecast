@@ -9,9 +9,9 @@ TARGET_SIZE = 1
 NUM_STEPS = 30
 INIT_LEARNING_RATE = 0.0001
 LEARNING_RATE_DECAY = 0.99
-BATCH_SIZE =512
+BATCH_SIZE = 512
 KEEP_PROB = 0.8
-LSTM_SIZE = 512
+LSTM_SIZE = 128
 NUM_LAYERS = 2
 INIT_EPOCH = 5
 MAX_EPOCH = 200
@@ -27,8 +27,7 @@ class LSTM:
     def __init__(self):
         tf.reset_default_graph()
         self.graph = tf.Graph()
-        self.last_history = []
-        self.target_history = []
+        self.current_lr = INIT_LEARNING_RATE
     def define(self):
         with self.graph.as_default():
             print(NUM_LAYERS)
@@ -38,10 +37,8 @@ class LSTM:
             
             def _create_one_cell():
                 lstm_cell = tf.contrib.rnn.LSTMCell(LSTM_SIZE)
-                #if KEEP_PROB < 1.0:
                 return tf.contrib.rnn.DropoutWrapper(lstm_cell, output_keep_prob=KEEP_PROB)
-                #else:
-                #    return lstm_cell
+ 
             #lstm_cell=tf.contrib.rnn.LSTMCell(LSTM_SIZE)
             #lstm_cell=tf.contrib.rnn.DropoutWrapper(lstm_cell, output_keep_prob=KEEP_PROB, seed=42)
             
@@ -59,14 +56,11 @@ class LSTM:
             
             last = tf.gather(val, int(val.get_shape()[0]) - 1, name="last_lstm_output")
             
-            self.last_history.append(last)
             
             
             weight = tf.Variable(tf.truncated_normal([LSTM_SIZE, 1]))
             bias = tf.Variable(tf.constant(0.01, shape=[1]))
-            #self.prediction = tf.matmul(last, weight) + bias
             self.pred = tf.matmul(last, weight) + bias
-            #self.pred = self.prediction
             
             #self.loss = tf.reduce_mean(tf.square(self.prediction - self.targets))
             #self.loss = tf.reduce_mean(tf.square(self.pred - self.targets))
@@ -116,7 +110,7 @@ class LSTM:
             #plt.show()
 
             
-    def test(self, test_inputs, test_targets, train_inputs, train_targets):
+    def test(self, test_inputs, test_targets, test_dates, train_inputs, train_targets, train_dates):
         #data_frame = [[],[],[]]
         t_all=[]
         p_all=[]
@@ -133,24 +127,19 @@ class LSTM:
                 #summary1, summary2, summary3 = sess.run([self.prediction, self.targets, self.pred], test_data_feed)
                 t, p = sess.run([self.targets, self.pred], test_data_feed)
                 i +=1
-                #data_frame[0].append(i)
-                #data_frame[1].append(np.ravel(summary3))
-                #data_frame[2].append(np.ravel(summary2))
                 t_all.append(np.ravel(t))
                 p_all.append(np.ravel(p))
         #print('test_targets:',t_all)
             
         t_all=np.concatenate(t_all)
         p_all=np.concatenate(p_all)
+        
+        plt.rcParams.update({'font.size': 16})
+        
         fig, (ax1, ax2) = plt.subplots(1, 2) #, figsize=(16,9))
 
-        #data_frame[2] = np.multiply(data_frame[2],1)
-        #data_frame[1] = np.multiply(data_frame[1],1)
-
-        #ax1.plot(data_frame[2], label="target")
-        #ax1.plot(data_frame[1], label="prediction")
-        ax1.plot(t_all, label="target")
-        ax1.plot(p_all, label="prediction")
+        ax1.plot(test_dates, t_all, label="target")
+        ax1.plot(test_dates,p_all, label="prediction")
         ax1.set_xlabel('Date')
         ax1.set_ylabel('Price')
         ax1.set_title('Test Data')
@@ -169,18 +158,15 @@ class LSTM:
         with tf.Session(graph=self.graph) as sess:
             saver = tf.train.Saver()
             saver.restore(sess, "./model.ckpt")
-            #merged_summary = tf.summary.merge_all()
-            #writer = tf.summary.FileWriter("./model_log", sess.graph)
-            #writer.add_graph(sess.graph) 
+            merged_summary = tf.summary.merge_all()
+            writer = tf.summary.FileWriter("./model_log", sess.graph)
+            writer.add_graph(sess.graph) 
             i = 0
             for batch_X, batch_Y in zip(list(chunks(train_inputs, 1)), list(chunks(train_targets, 1))):
                 test_data_feed = {self.inputs: batch_X, self.targets: batch_Y, self.learning_rate: self.current_lr}
                 #summary1, summary2, summary3 = sess.run([self.prediction, self.targets, self.pred], test_data_feed)
                 summary2, summary3 = sess.run([self.targets, self.pred], test_data_feed)
                 i +=1
-                #data_frame[0].append(i)
-                #data_frame[1].append(summary3)
-                #data_frame[2].append(summary2)
                 t_all_train.append(np.ravel(summary2))
                 p_all_train.append(np.ravel(summary3))
 
@@ -191,17 +177,12 @@ class LSTM:
         mse_train=((t_all_train - p_all_train)**2).mean()
         print("Train MSE:", mse_train)
         
-        #data_frame[2] = np.multiply(data_frame[2],1)
-        #data_frame[1] = np.multiply(data_frame[1],1)
-
-        #ax2.plot(data_frame[2], label="target")
-        #ax2.plot(data_frame[1], label="prediction")
-        ax2.plot(t_all_train, label="target")
-        ax2.plot(p_all_train, label="prediction")
+        ax2.plot(train_dates, t_all_train, label="target")
+        ax2.plot(train_dates, p_all_train, label="prediction")
         ax2.set_xlabel('Date')
         ax2.set_ylabel('Price')
         ax2.set_title('Training Data')
-        ax2.legend()
+        ax2.legend(prop={'size':16})
                   
         plt.show()
         plt.savefig('figure.png')

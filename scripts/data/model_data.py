@@ -56,9 +56,12 @@ class model_data(object):
         self.train_dates_ = self.dates_[:int((len(self.dates_)*.8))]
         self.test_dates_ = self.dates_[int((len(self.dates_)*.8))+1:]
         
+        # plot generation for poster:
+        
+        #plt.rcParams.update({'font.size': 16})
         #fig, ax1 = plt.subplots(figsize=(16,9))
-        #ax1.plot(self.input_seq_, label='inputs')
-        #ax1.plot(self.targets_, label='targets')
-        ##ax1.set_ylim(-1,2)
-        #ax1.legend()
+        #ax1.plot(self.date_seq_[:int(len(self.input_seq_)*.8)],self.input_seq_[:int(len(self.input_seq_)*.8)], label='training data', color='C0')
+        #ax1.plot(self.date_seq_[int(len(self.input_seq_)*.8)+1:],self.input_seq_[int(len(self.input_seq_)*.8)+1:], label='test data', linestyle=':',color='C0')
+        ##ax1.plot(self.targets_, label='targets')
+        #ax1.legend(prop={'size':16})
         #plt.show()

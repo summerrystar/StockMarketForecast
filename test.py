@@ -11,7 +11,7 @@ import tensorflow as tf
 if __name__ == "__main__":
 
     # Stock symbols to be downloaded
-    tickers = ['^GSPC']
+    tickers = ['MSFT']
 
     # Date range of data to be downloaded
     start_date = '2016-02-18'
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     lstm_1.train(data_1.train_inputs_, data_1.train_targets_)
 
     # Test graph
-    lstm_1.test(data_1.test_inputs_, data_1.test_targets_, data_1.train_inputs_, data_1.train_targets_)
+    lstm_1.test(data_1.test_inputs_, data_1.test_targets_, data_1.test_dates_, data_1.train_inputs_, data_1.train_targets_, data_1.train_dates_)
 
     print("End")
 
